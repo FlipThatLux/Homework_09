@@ -1,9 +1,19 @@
 phonebook = {}
 
-def greeting(user_input):
+def command_error(func):
+    def inner(args):
+        try:
+            return func(args)
+        except KeyError:
+            return 'Unknown command, type "help" to see the list of commands'
+        except IndexError:
+            return 'Not enough arguments'
+    return inner
+
+def greeting(args):
     return "How can I help you?"
 
-def help(user_input):
+def help(args):
     commands = [{"command": "hello", "description": "show greeting"},
                 {"command": "help", "description": "show all available commands"},
                 {"command": "add, name, phone_number", "description": "add a new contact"},
@@ -19,84 +29,39 @@ def help(user_input):
     return result
 
 def parcer(user_input):
+    user_input += ","
     disected_input = user_input.lower().split(",")
-    command =  disected_input[0].strip(' ') if len(disected_input) > 1 else user_input.lower().strip(' ')
-    name = disected_input[1].strip(' ') if len(disected_input) > 1 else None
-    phone_number = disected_input[2].strip(' ') if len(disected_input) > 2 else None
-    return {"command": command, "name": name, "phone_number": phone_number}
+    disected_input.remove('')
+    results = list()
+    for i in disected_input:
+        results.append(i.lower().strip(' '))
+    return results
 
-def command_error(func):
-    def inner(user_input):
-        try:
-            return func(user_input)
-        except KeyError:
-            return 'Unknown command, type "help" to see the list of commands'
-    return inner
-
-def add(user_input):
-    name = user_input["name"]
-    phone_number = user_input["phone_number"]
-    if not name:
-        return "Name invalid"
-    if not phone_number:
-        return "Phone number invalid"
-    if name in phonebook.keys():
+def add(args):
+    if args[1] in phonebook.keys():
         return "A contact with this name already exists"
-    phonebook[name] = phone_number
-    return f"Contact added: {name.capitalize()}: {phone_number}"
+    phonebook[args[1]] = args[2]
+    return f"Contact added: {args[1].capitalize()}: {args[2]}"
 
-def change(user_input):
-    name = user_input["name"]
-    phone_number = user_input["phone_number"]
-    if not name:
-        return "Name invalid"
-    if not phone_number:
-        return "Phone number invalid"
-    result = 'Contact not found'
-    if name in phonebook.keys():
-        phonebook[name] = phone_number
-        result = f"Contact changed to {name.capitalize()}: {phone_number}"
-    return result
+def change(args):
+    if args[1] in phonebook.keys():
+        phonebook[args[1]] = args[2]
+        return f"Contact changed to {args[1].capitalize()}: {args[2]}"
+    return 'Contact not found'
 
-def show_contact(user_input):
-    ref_name = user_input["name"]
-    result = 'Contact not found'
-    if not ref_name:
-        result = "Name invalid"
-        return result
-    if ref_name in phonebook.keys():
-        result = f"{ref_name.capitalize()}: {phonebook[ref_name]}"  
-    return result
+def show_contact(args):
+    if args[1] in phonebook.keys():
+        return f"{args[1].capitalize()}: {phonebook[args[1]]}"  
+    return f"{args[1].capitalize()} not found"
 
-def show_all(user_input):
+def show_all(args):
     result = ""
     for name, phone_number in phonebook.items():
-        result += f"{name.capitalize()}: {phone_number}\n"
-    if result == "":
-        result = "Seems like your list of contacts is empty. Try adding some"      
+        result += f"{name.capitalize()}: {phone_number}\n"     
     return result
 
-# def handler(user_input):
-#     command = user_input["command"]
-#     functions = {
-#                 "hello": greeting,
-#                 "help": help,
-#                 "add": add,
-#                 "change": change,
-#                 "phone": show_contact,
-#                 "show all": show_all
-#             }
-#     if command in ("goodbye", "close", "exit"):
-#         result = "Goodbye!"
-#     elif command in functions.keys():
-#             result = functions[command](user_input)
-#     else:
-#         result = 'Unknown command, type "help" to see the list of commands'  
-#     return result
-
 @command_error
-def handler(user_input):
-    command = user_input["command"]
+def handler(args):
     functions = {
                 "hello": greeting,
                 "help": help,
@@ -105,22 +70,19 @@ def handler(user_input):
                 "phone": show_contact,
                 "show all": show_all 
                 }
-    if command in ("goodbye", "close", "exit"):
-        result = "Goodbye!"
-    else: result = functions[command](user_input) 
-    return result
-    
-
+    return functions[args[0]](args)
 
 def main():
     print("Greetings, user! Phonebook manager online")
     while True:
         user_input = parcer(input('Enter a command: \n>>> '))
-        result = handler(user_input) 
-        print(result)  
-        if result == "Goodbye!":
+        #print(user_input)
+        if user_input[0] in ("goodbye", "close", "exit"):
+            print("Goodbye!")
             break
-        elif result == 'Unknown command, type "help" to see the list of commands':
-            continue
+        result = handler(user_input)
+        if result == "":
+            result = "Seems like your list of contacts is empty. Try adding some" 
+        print(result)
 
 main()
